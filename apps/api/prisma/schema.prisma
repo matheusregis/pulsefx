@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Source {
+  BCB
+  FRED
+}
+
+enum Frequency {
+  DAILY
+  MONTHLY
+}
+
+/// An indicator exposed by Pulse FX (FX rate or macro series), sourced from
+/// a single upstream provider (BCB or FRED) and mapped to a normalized shape.
+model Indicator {
+  id              String    @id @default(cuid())
+  code            String    @unique
+  name            String
+  source          Source
+  sourceSeriesId  String
+  unit            String
+  frequency       Frequency
+  /// Number of prior *available* observations used as the variation denominator.
+  variationWindow Int
+  /// Human label for the variation rule, e.g. "D/D-1" or "12m (YoY)".
+  variationLabel  String
+  /// How many most-recent observations the detail view's chart/table shows.
+  historyWindow   Int
+  description     String
+  limitations     String
+  lastSyncedAt    DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  observations Observation[]
+  favorites    Favorite[]
+}
+
+/// A single point in an indicator's time series. `date` is the observation's
+/// reference date (not the sync/fetch timestamp).
+model Observation {
+  id          String   @id @default(cuid())
+  indicatorId String
+  date        DateTime @db.Date
+  value       Decimal  @db.Decimal(18, 6)
+  createdAt   DateTime @default(now())
+
+  indicator Indicator @relation(fields: [indicatorId], references: [id], onDelete: Cascade)
+
+  @@unique([indicatorId, date])
+  @@index([indicatorId, date])
+}
+
+/// "Meus indicadores" favorite, keyed by an anonymous per-device client id
+/// (see apps/web src/lib/clientId.ts) since the MVP has no user accounts.
+model Favorite {
+  id          String   @id @default(cuid())
+  clientId    String
+  indicatorId String
+  createdAt   DateTime @default(now())
+
+  indicator Indicator @relation(fields: [indicatorId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, indicatorId])
+  @@index([clientId])
+}
