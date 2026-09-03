@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pulsefx}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pulsefx}
+      POSTGRES_DB: ${POSTGRES_DB:-pulsefx}
+    ports:
+      # Host port 5433 (not 5432) to avoid clashing with a locally-running
+      # Postgres; change freely if 5433 is also taken. Irrelevant to
+      # container-to-container traffic, which always uses 5432 internally.
+      - '${POSTGRES_HOST_PORT:-5433}:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-pulsefx} -d ${POSTGRES_DB:-pulsefx}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    env_file:
+      - .env
+    environment:
+      # Overrides .env's DATABASE_URL so the API always reaches Postgres by
+      # its compose service name, regardless of what a host-oriented .env says.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-pulsefx}:${POSTGRES_PASSWORD:-pulsefx}@postgres:5432/${POSTGRES_DB:-pulsefx}?schema=public
+    ports:
+      - '4000:4000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:4000}
+    ports:
+      - '5173:80'
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
