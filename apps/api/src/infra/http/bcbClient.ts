@@ -10,6 +10,8 @@ export interface RawPoint {
   /** ISO date (YYYY-MM-DD) */
   date: string;
   value: number;
+  /** Paired buy-side value, e.g. PTAX cotacaoCompra alongside `value` = cotacaoVenda. */
+  secondaryValue?: number;
 }
 
 const PTAX_BASE = 'https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata';
@@ -29,20 +31,23 @@ function toSgsDate(d: Date): string {
 
 interface PtaxRow {
   cotacaoVenda: number;
+  cotacaoCompra: number;
   dataHoraCotacao: string; // "2024-01-12 13:07:33.123"
 }
 
 /**
- * USD/BRL PTAX — daily closing sell rate. `CotacaoDolarPeriodo` already
- * returns a single (closing) quote per trading day, so no boletim-type
- * filter is needed. We use `cotacaoVenda` (sell) as it's the conventionally
- * quoted PTAX rate.
+ * USD/BRL PTAX — daily closing rate (dólar comercial). `CotacaoDolarPeriodo`
+ * already returns a single (closing) quote per trading day, so no
+ * boletim-type filter is needed. `value` = cotacaoVenda (sell, the
+ * conventionally quoted PTAX rate) and `secondaryValue` = cotacaoCompra
+ * (buy), both real BCB data — see README for why "dólar turismo" is not
+ * included (BCB does not publish it; it's set per bank/exchange bureau).
  */
 export async function fetchPtaxSeries(startDate: Date, endDate: Date): Promise<RawPoint[]> {
   const url =
     `${PTAX_BASE}/CotacaoDolarPeriodo(dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)` +
     `?@dataInicial='${toOlindaDate(startDate)}'&@dataFinalCotacao='${toOlindaDate(endDate)}'` +
-    `&$top=10000&$format=json&$select=cotacaoVenda,dataHoraCotacao`;
+    `&$top=10000&$format=json&$select=cotacaoVenda,cotacaoCompra,dataHoraCotacao`;
 
   const res = await fetch(url);
   if (!res.ok) {
@@ -53,6 +58,7 @@ export async function fetchPtaxSeries(startDate: Date, endDate: Date): Promise<R
   return body.value.map((row) => ({
     date: row.dataHoraCotacao.slice(0, 10),
     value: row.cotacaoVenda,
+    secondaryValue: row.cotacaoCompra,
   }));
 }
 

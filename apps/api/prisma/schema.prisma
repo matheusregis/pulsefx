@@ -33,6 +33,11 @@ model Indicator {
   variationLabel  String
   /// How many most-recent observations the detail view's chart/table shows.
   historyWindow   Int
+  /// Label for Observation.value, e.g. "Venda" (PTAX) or "Taxa" (Selic/Fed Funds).
+  valueLabel      String  @default("Valor")
+  /// Label for Observation.secondaryValue when the series has a buy/sell pair
+  /// (e.g. "Compra" for PTAX). Null when the indicator has no secondary value.
+  secondaryValueLabel String?
   description     String
   limitations     String
   lastSyncedAt    DateTime?
@@ -50,6 +55,9 @@ model Observation {
   indicatorId String
   date        DateTime @db.Date
   value       Decimal  @db.Decimal(18, 6)
+  /// Paired value for buy/sell series (e.g. PTAX cotacaoCompra alongside the
+  /// primary cotacaoVenda in `value`). Null for indicators without a pair.
+  secondaryValue Decimal? @db.Decimal(18, 6)
   createdAt   DateTime @default(now())
 
   indicator Indicator @relation(fields: [indicatorId], references: [id], onDelete: Cascade)

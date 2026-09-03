@@ -18,13 +18,16 @@ const indicators = [
     variationWindow: 1,
     variationLabel: 'D/D-1 (dia útil anterior com cotação)',
     historyWindow: 90,
+    valueLabel: 'Venda',
+    secondaryValueLabel: 'Compra',
     description:
       'Taxa de câmbio de referência do mercado brasileiro (BCB Olinda/PTAX, endpoint CotacaoDolarPeriodo — uma ' +
-      'cotação de fechamento por dia útil, venda). É a taxa mais usada como benchmark para conversão BRL/USD no ' +
-      'Brasil, tornando-a o indicador central do Pulse FX.',
+      'cotação de fechamento por dia útil, compra e venda). É a taxa mais usada como benchmark para conversão ' +
+      'BRL/USD no Brasil, tornando-a o indicador central do Pulse FX.',
     limitations:
       'Publicada apenas em dias de pregão (sem sábados, domingos e feriados bancários); variação D/D-1 compara ' +
-      'contra o último dia útil com cotação, sem interpolar dias sem pregão.',
+      'contra o último dia útil com cotação, sem interpolar dias sem pregão. É o dólar comercial (PTAX) — o BCB ' +
+      'não publica série pública de "dólar turismo", que é definido individualmente por bancos/casas de câmbio.',
   },
   {
     code: 'BR-SELIC-META',
@@ -36,6 +39,7 @@ const indicators = [
     variationWindow: 1,
     variationLabel: 'D/D-1 (dia útil anterior)',
     historyWindow: 180,
+    valueLabel: 'Taxa',
     description:
       'Taxa básica de juros da economia brasileira (BCB SGS série 432), âncora para custo de capital, crédito e ' +
       'atratividade do BRL frente a outras moedas — contexto direto para quem acompanha câmbio.',
@@ -53,6 +57,7 @@ const indicators = [
     variationWindow: 1,
     variationLabel: 'M/M-1 (mês anterior)',
     historyWindow: 24,
+    valueLabel: 'Taxa',
     description:
       'Taxa efetiva de juros dos EUA (FRED, série FEDFUNDS, média mensal). Principal driver do diferencial de ' +
       'juros Brasil-EUA, um dos fatores mais citados para explicar movimentos do USD/BRL.',
@@ -69,6 +74,7 @@ const indicators = [
     variationWindow: 12,
     variationLabel: '12m (YoY)',
     historyWindow: 36,
+    valueLabel: 'Índice',
     description:
       'Índice de inflação ao consumidor dos EUA (FRED, série CPIAUCSL). Inflação americana influencia a política ' +
       'do Fed e, por consequência, o diferencial de juros que move capital para/fora do Brasil.',

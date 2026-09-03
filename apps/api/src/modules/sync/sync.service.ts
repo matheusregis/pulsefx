@@ -51,7 +51,7 @@ export class SyncService {
       const points = await this.fetchRaw(indicator);
       const upserted = await this.repo.upsertObservations(
         indicator.id,
-        points.map((p) => ({ date: dateOnly(p.date), value: p.value })),
+        points.map((p) => ({ date: dateOnly(p.date), value: p.value, secondaryValue: p.secondaryValue })),
       );
       await this.repo.markSynced(indicator.id, new Date());
       this.logger.info({ code: indicator.code, upserted }, 'indicator synced');

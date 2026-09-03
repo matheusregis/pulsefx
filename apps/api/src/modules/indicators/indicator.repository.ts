@@ -4,6 +4,7 @@ import { prisma } from '../../infra/db/prisma';
 export interface ObservationInput {
   date: Date;
   value: number;
+  secondaryValue?: number;
 }
 
 /**
@@ -31,13 +32,14 @@ export class IndicatorRepository {
   async upsertObservations(indicatorId: string, points: ObservationInput[]): Promise<number> {
     if (points.length === 0) return 0;
     await prisma.$transaction(
-      points.map((p) =>
-        prisma.observation.upsert({
+      points.map((p) => {
+        const secondaryValue = p.secondaryValue !== undefined ? new Prisma.Decimal(p.secondaryValue) : null;
+        return prisma.observation.upsert({
           where: { indicatorId_date: { indicatorId, date: p.date } },
-          create: { indicatorId, date: p.date, value: new Prisma.Decimal(p.value) },
-          update: { value: new Prisma.Decimal(p.value) },
-        }),
-      ),
+          create: { indicatorId, date: p.date, value: new Prisma.Decimal(p.value), secondaryValue },
+          update: { value: new Prisma.Decimal(p.value), secondaryValue },
+        });
+      }),
     );
     return points.length;
   }

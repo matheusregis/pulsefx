@@ -18,6 +18,8 @@ export interface SeriesPoint {
   /** ISO date (YYYY-MM-DD) — the observation's reference date. */
   date: string;
   value: number;
+  /** Paired buy-side value (e.g. PTAX cotacaoCompra). Not used by the variation rule. */
+  secondaryValue?: number;
 }
 
 export type VariationUnavailableReason = 'insufficient-history' | 'zero-denominator';
