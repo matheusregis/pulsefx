@@ -1,0 +1,6 @@
+# Force LF for everything by default, regardless of the platform that checks
+# it out or commits it — Windows' core.autocrlf=true was silently turning
+# docker-entrypoint.sh into CRLF, which breaks its shebang inside the Linux
+# container ("no such file or directory" on exec).
+* text=auto eol=lf
+*.sh text eol=lf
