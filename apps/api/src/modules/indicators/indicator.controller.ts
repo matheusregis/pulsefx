@@ -10,11 +10,7 @@ export class IndicatorController {
   };
 
   detail = async (req: Request, res: Response): Promise<void> => {
-    const detail = await this.service.getDetail(req.params.code);
-    if (!detail) {
-      res.status(404).json({ error: `Indicator '${req.params.code}' not found` });
-      return;
-    }
-    res.json({ data: detail });
+    const data = await this.service.getDetail(req.params.code);
+    res.json({ data });
   };
 }

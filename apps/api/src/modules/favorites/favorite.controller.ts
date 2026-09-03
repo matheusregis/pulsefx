@@ -1,5 +1,4 @@
 import type { Request, Response } from 'express';
-import { NotFoundError } from '../../domain/errors';
 import { FavoriteService } from './favorite.service';
 
 export class FavoriteController {
@@ -11,28 +10,12 @@ export class FavoriteController {
   };
 
   add = async (req: Request, res: Response): Promise<void> => {
-    try {
-      await this.service.add(req.clientId!, req.params.code);
-      res.status(204).send();
-    } catch (err) {
-      if (err instanceof NotFoundError) {
-        res.status(404).json({ error: err.message });
-        return;
-      }
-      throw err;
-    }
+    await this.service.add(req.clientId!, req.params.code);
+    res.status(204).send();
   };
 
   remove = async (req: Request, res: Response): Promise<void> => {
-    try {
-      await this.service.remove(req.clientId!, req.params.code);
-      res.status(204).send();
-    } catch (err) {
-      if (err instanceof NotFoundError) {
-        res.status(404).json({ error: err.message });
-        return;
-      }
-      throw err;
-    }
+    await this.service.remove(req.clientId!, req.params.code);
+    res.status(204).send();
   };
 }

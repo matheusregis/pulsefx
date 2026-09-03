@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
+import { BadRequestError } from '../domain/errors';
 
 const HEADER = 'x-client-id';
 
@@ -8,11 +9,10 @@ const HEADER = 'x-client-id';
  * on every favorites call. Reject requests missing it rather than silently
  * bucketing them under a shared key.
  */
-export function requireClientId(req: Request, res: Response, next: NextFunction): void {
+export function requireClientId(req: Request, _res: Response, next: NextFunction): void {
   const clientId = req.header(HEADER);
   if (!clientId || clientId.trim().length === 0) {
-    res.status(400).json({ error: `Missing required '${HEADER}' header` });
-    return;
+    throw new BadRequestError(`Missing required '${HEADER}' header`);
   }
   req.clientId = clientId;
   next();

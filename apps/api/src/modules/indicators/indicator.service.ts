@@ -1,4 +1,5 @@
 import { calculateVariation } from '../../domain/indicators/variation';
+import { NotFoundError } from '../../domain/errors';
 import { IndicatorRepository } from './indicator.repository';
 import { toCardDTO, toSeriesPoints, type IndicatorCardDTO, type IndicatorDetailDTO } from './indicator.dto';
 
@@ -17,9 +18,9 @@ export class IndicatorService {
     );
   }
 
-  async getDetail(code: string): Promise<IndicatorDetailDTO | null> {
+  async getDetail(code: string): Promise<IndicatorDetailDTO> {
     const indicator = await this.repo.findByCode(code);
-    if (!indicator) return null;
+    if (!indicator) throw new NotFoundError(`Indicator '${code}' not found`);
 
     const observations = await this.repo.findObservations(indicator.id, indicator.historyWindow);
     const pointsDesc = toSeriesPoints(observations);

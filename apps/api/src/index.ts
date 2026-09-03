@@ -1,5 +1,4 @@
 import 'dotenv/config';
-import 'express-async-errors';
 import pino from 'pino';
 import { createApp } from './app';
 import { loadEnv } from './config/env';
