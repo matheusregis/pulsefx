@@ -27,7 +27,7 @@ MVP para acompanhar câmbio (USD/BRL) e indicadores macro relevantes a partir de
 Pré-requisitos: Docker + Docker Compose. Tempo esperado: < 15 min.
 
 ```bash
-git clone <repo-url> pulsefx && cd pulsefx
+git clone https://github.com/matheusregis/pulsefx.git && cd pulsefx
 cp .env.example .env
 # edite .env e preencha FRED_API_KEY (grátis: https://fredaccount.stlouisfed.org/apikeys)
 # ADMIN_SYNC_TOKEN já vem com um placeholder — troque por qualquer string de 8+ caracteres
