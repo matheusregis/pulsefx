@@ -21,6 +21,11 @@ describe('buildRangeOptions', () => {
     const options = buildRangeOptions('DAILY', 5);
     expect(options).toEqual([{ key: 'ALL', label: 'Tudo', points: 5 }]);
   });
+
+  it('drops windows listed in excludeWindows (e.g. 7D for an event-driven series like Selic)', () => {
+    const options = buildRangeOptions('DAILY', 180, [7]);
+    expect(options.map((o) => o.key)).toEqual(['30D', '90D', 'ALL']);
+  });
 });
 
 describe('defaultRangeKey', () => {

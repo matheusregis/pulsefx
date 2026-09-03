@@ -14,8 +14,16 @@ export interface RangeOption {
  * 12M/24M/36M, and a window is only offered when it's strictly smaller than
  * the full history (otherwise it's identical to "Tudo" and just clutters
  * the row). "Tudo" is always present.
+ *
+ * @param excludeWindows Windows to drop even if otherwise available — e.g.
+ *   BR-SELIC-META only changes on Copom decision days, so 7D is almost
+ *   always a flat line and not worth offering (see IndicatorDetail.tsx).
  */
-export function buildRangeOptions(frequency: 'DAILY' | 'MONTHLY', historyLength: number): RangeOption[] {
+export function buildRangeOptions(
+  frequency: 'DAILY' | 'MONTHLY',
+  historyLength: number,
+  excludeWindows: number[] = [],
+): RangeOption[] {
   const candidates =
     frequency === 'DAILY'
       ? [
@@ -30,7 +38,7 @@ export function buildRangeOptions(frequency: 'DAILY' | 'MONTHLY', historyLength:
           { key: '36M', label: '36M', points: 36 },
         ];
 
-  const options = candidates.filter((c) => c.points < historyLength);
+  const options = candidates.filter((c) => c.points < historyLength && !excludeWindows.includes(c.points));
   options.push({ key: 'ALL', label: 'Tudo', points: historyLength });
   return options;
 }

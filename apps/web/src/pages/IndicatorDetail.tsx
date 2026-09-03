@@ -8,16 +8,22 @@ import { VariationBadge } from '../components/VariationBadge';
 import { buildRangeOptions, defaultRangeKey, filterHistory } from '../lib/chartRange';
 import { formatDate, formatValue } from '../lib/format';
 
+// Selic only moves on Copom decision days (see seed.ts limitations), so a 7D
+// window is almost always a flat line — not worth offering as a filter.
+const RANGE_EXCLUSIONS: Record<string, number[]> = {
+  'BR-SELIC-META': [7],
+};
+
 export function IndicatorDetail() {
   const { code } = useParams<{ code: string }>();
   const { indicator, loading, error } = useIndicatorDetail(code);
   const { favorites, toggle } = useFavorites();
   const [rangeKey, setRangeKey] = useState<string | null>(null);
 
-  const rangeOptions = useMemo(
-    () => (indicator ? buildRangeOptions(indicator.frequency, indicator.history.length) : []),
-    [indicator],
-  );
+  const rangeOptions = useMemo(() => {
+    if (!indicator) return [];
+    return buildRangeOptions(indicator.frequency, indicator.history.length, RANGE_EXCLUSIONS[indicator.code] ?? []);
+  }, [indicator]);
   const activeRangeKey = rangeKey ?? defaultRangeKey(rangeOptions);
   const activeOption = rangeOptions.find((o) => o.key === activeRangeKey) ?? rangeOptions.at(-1);
   const visibleHistory = indicator ? filterHistory(indicator.history, activeOption?.points ?? indicator.history.length) : [];
@@ -81,7 +87,21 @@ export function IndicatorDetail() {
           <h2>Histórico</h2>
           <RangeFilter options={rangeOptions} value={activeRangeKey} onChange={setRangeKey} />
         </div>
-        <PriceChart points={visibleHistory} unit={indicator.unit} />
+
+        {hasSecondary ? (
+          <div className="detail__charts">
+            <div>
+              <p className="price-chart__label">{indicator.secondaryValueLabel}</p>
+              <PriceChart points={visibleHistory} unit={indicator.unit} valueKey="secondaryValue" />
+            </div>
+            <div>
+              <p className="price-chart__label">{indicator.valueLabel}</p>
+              <PriceChart points={visibleHistory} unit={indicator.unit} valueKey="value" />
+            </div>
+          </div>
+        ) : (
+          <PriceChart points={visibleHistory} unit={indicator.unit} />
+        )}
       </div>
 
       <details className="detail__table">

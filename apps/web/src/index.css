@@ -548,6 +548,27 @@ h3 {
   padding: 32px 0;
 }
 
+.detail__charts {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.price-chart__label {
+  margin: 0 0 6px;
+  color: var(--text-faint);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+@media (min-width: 640px) {
+  .detail__charts {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 /* ---------- Table ---------- */
 
 table {

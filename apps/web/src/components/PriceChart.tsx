@@ -6,6 +6,9 @@ interface Props {
   points: SeriesPoint[];
   unit: string;
   height?: number;
+  /** Which field of each point to plot — lets the same chart render either
+   * side of a buy/sell pair (see IndicatorDetail.tsx). Defaults to `value`. */
+  valueKey?: 'value' | 'secondaryValue';
 }
 
 const VIEW_WIDTH = 640;
@@ -19,7 +22,7 @@ const PADDING_Y = 20;
  * crosshair with a value tooltip. Hand-rolled SVG (no charting lib) — see
  * README § Decisões técnicas for the trade-off.
  */
-export function PriceChart({ points, unit, height = 220 }: Props) {
+export function PriceChart({ points, unit, height = 220, valueKey = 'value' }: Props) {
   const gradientId = useId();
   const svgRef = useRef<SVGSVGElement>(null);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
@@ -29,7 +32,9 @@ export function PriceChart({ points, unit, height = 220 }: Props) {
     return <p className="chart-empty">Sem observações para exibir.</p>;
   }
 
-  const values = points.map((p) => p.value);
+  const valueOf = (p: SeriesPoint) => (valueKey === 'secondaryValue' ? (p.secondaryValue ?? p.value) : p.value);
+
+  const values = points.map(valueOf);
   const min = Math.min(...values);
   const max = Math.max(...values);
   const range = max - min || 1; // avoid /0 when the series is flat
@@ -39,9 +44,11 @@ export function PriceChart({ points, unit, height = 220 }: Props) {
 
   const first = points[0];
   const last = points[points.length - 1];
-  const tone: 'up' | 'down' | 'flat' = last.value > first.value ? 'up' : last.value < first.value ? 'down' : 'flat';
+  const firstValue = valueOf(first);
+  const lastValue = valueOf(last);
+  const tone: 'up' | 'down' | 'flat' = lastValue > firstValue ? 'up' : lastValue < firstValue ? 'down' : 'flat';
 
-  const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${toX(i)} ${toY(p.value)}`).join(' ');
+  const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${toX(i)} ${toY(valueOf(p))}`).join(' ');
   const areaPath = `${linePath} L ${toX(points.length - 1)} ${VIEW_HEIGHT} L ${toX(0)} ${VIEW_HEIGHT} Z`;
 
   const active = hoverIndex !== null ? points[hoverIndex] : last;
@@ -110,12 +117,12 @@ export function PriceChart({ points, unit, height = 220 }: Props) {
             strokeWidth={1}
           />
         )}
-        <circle cx={toX(activeIndex)} cy={toY(active.value)} r={4} fill="currentColor" />
+        <circle cx={toX(activeIndex)} cy={toY(valueOf(active))} r={4} fill="currentColor" />
       </svg>
 
       <div className="price-chart__tooltip" aria-hidden={hoverIndex === null}>
         <span className="price-chart__tooltip-date">{formatDate(active.date)}</span>
-        <span className="price-chart__tooltip-value">{formatValue(active.value, unit)}</span>
+        <span className="price-chart__tooltip-value">{formatValue(valueOf(active), unit)}</span>
       </div>
     </div>
   );
