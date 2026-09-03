@@ -17,6 +17,7 @@ MVP para acompanhar câmbio (USD/BRL) e indicadores macro relevantes a partir de
 - [Sincronização (TTL / job / endpoint admin)](#sincronização)
 - [Meus indicadores (favoritos)](#meus-indicadores-favoritos)
 - [Arquitetura e decisões técnicas](#arquitetura-e-decisões-técnicas)
+- [Como usei IA neste projeto](#como-usei-ia-neste-projeto)
 - [Estrutura do repositório](#estrutura-do-repositório)
 
 ---
@@ -130,6 +131,8 @@ npm run lint
 | `apps/api/src/domain/indicators/variation.test.ts`                                            | Regra de domínio (variação) |
 | `apps/api/src/modules/indicators/indicator.repository.test.ts`                                | Persistência/repositório   |
 | `apps/api/src/modules/indicators/indicator.routes.test.ts`                                    | HTTP (rotas)                |
+| `apps/api/src/modules/favorites/favorite.routes.test.ts`                                      | HTTP (rotas + mapeamento de erro) |
+| `apps/api/src/app.test.ts`                                                                     | HTTP (wiring completo — 404, JSON inválido → 400) |
 | `apps/api/src/modules/sync/sync.integration.test.ts`                                          | Integração (API + Postgres) |
 | `apps/web/src/lib/format.test.ts`                                                              | Frontend (lógica pura)     |
 | `apps/web/src/lib/chartRange.test.ts`                                                          | Frontend (lógica pura — filtros de período) |
@@ -207,11 +210,30 @@ Sem sistema de contas (fora de escopo, §8 do briefing). Estratégia adotada:
 - **ORM**: Prisma — migrations versionadas em `apps/api/prisma/migrations/`, schema como fonte única de verdade, `Decimal` para valores monetários/percentuais (evita erro de ponto flutuante).
 - **Sem tabela de "shared types" entre API e web**: os DTOs são duplicados (`apps/web/src/types.ts` espelha `apps/api/src/modules/indicators/indicator.dto.ts`) em vez de um pacote `packages/shared`. Para 2 tipos de payload isso reduz complexidade de build (sem publicar/linkar um pacote interno) às custas de precisar manter os dois em sincronia manualmente — trade-off razoável neste tamanho de projeto; um pacote compartilhado seria o próximo passo natural se o produto crescesse.
 - **Gráfico do detalhe** (`apps/web/src/components/PriceChart.tsx`): SVG desenhado à mão (sem lib de charting) — área com gradiente colorida por tendência (verde/vermelho, estilo CoinMarketCap), crosshair com tooltip no hover (mouse) e no toque (touch, sem travar o scroll da página). Para uma série de dezenas/poucas centenas de pontos isso evita uma dependência pesada e mantém o componente trivial de testar; se o produto precisasse de zoom/brush mais sofisticado, trocaria por uma lib (ex. Recharts/visx).
-- **Filtros de período** (`apps/web/src/lib/chartRange.ts`, requisito §4): janelas oferecidas dependem da frequência do indicador e de quanto histórico existe — 7D/30D/90D/180D para séries diárias, 12M/24M/36M para mensais, sempre com "Tudo". A opção padrão é a mais curta disponível (foco no dado recente), igual à maioria dos apps de cotação.
-- **Compra e venda**: quando o indicador tem `secondaryValueLabel` (hoje só `USD-BRL-PTAX`), card e detalhe mostram os dois valores lado a lado. A regra de variação (§ acima) continua usando só o valor primário (venda) — não há uma segunda variação para o valor de compra.
+- **Filtros de período** (`apps/web/src/lib/chartRange.ts`, requisito §4): janelas oferecidas dependem da frequência do indicador e de quanto histórico existe — 7D/30D/90D/180D para séries diárias, 12M/24M/36M para mensais, sempre com "Tudo". A opção padrão é a mais curta disponível (foco no dado recente), igual à maioria dos apps de cotação. `BR-SELIC-META` remove o 7D (`RANGE_EXCLUSIONS` em `IndicatorDetail.tsx`): como a Selic só muda em dia de decisão do Copom, uma janela de 7 dias quase sempre mostra uma linha reta e não agrega informação.
+- **Compra e venda**: quando o indicador tem `secondaryValueLabel` (hoje só `USD-BRL-PTAX`), card e detalhe mostram os dois valores lado a lado, e a tela de detalhe renderiza **dois gráficos** (Compra/Venda) em vez de sobrepor as duas linhas num único gráfico — os valores ficam próximos demais (spread tipicamente < 0,1%) pra distinguir visualmente numa única escala. A regra de variação (§ acima) continua usando só o valor primário (venda) — não há uma segunda variação para o valor de compra.
 - **Mobile-first**: grid de 1 coluna e barra de navegação fixa no rodapé abaixo de 760px; nav no topo e grid multi-coluna acima disso. Fonte `Inter` (texto) + `JetBrains Mono` (valores numéricos, alinhamento tabular) via Google Fonts.
-- **Erros HTTP**: `express-async-errors` + um único error handler central em `app.ts`, para não espalhar `try/catch` em cada controller (favoritos usam `try/catch` local apenas para diferenciar 404 de erro genérico).
+- **Erros HTTP** (`apps/api/src/domain/errors.ts` + `apps/api/src/middleware/errorHandler.ts`): uma hierarquia `HttpError` (`BadRequestError` 400, `UnauthorizedError` 401, `NotFoundError` 404) que qualquer camada pode lançar; um único error handler central (`app.ts`) mapeia pelo `status` do erro — nenhum controller precisa de `try/catch` só pra escolher status code. Erros de framework (ex.: corpo JSON malformado, que o `express.json()` rejeita com status 400 próprio) também são repassados com o status correto, em vez de caírem no 500 genérico. Só erro realmente inesperado vira 500 — e é logado, nunca com detalhe interno vazando na resposta. Ver `apps/api/src/app.test.ts` para os casos testados (404 de rota inexistente, 400 de JSON inválido).
 - **Logs**: `pino`/`pino-http`, JSON estruturado.
+
+---
+
+## Como usei IA neste projeto
+
+Usei o **Claude Code** como par de programação durante todo o desenvolvimento — na prática, uma sessão de desenvolvimento dirigida, não um "gerar e colar". O fluxo real foi:
+
+1. **Requisitos**: o enunciado do desafio como ponto de partida.
+2. **Proposta técnica**: a IA propõe arquitetura, schema, endpoints, implementação.
+3. **Revisão real, rodando a aplicação**: cada etapa foi validada rodando o Docker Compose de verdade — não só lendo o diff — e reportando de volta o que estava errado (prints de tela, saída de terminal, comportamento observado no navegador).
+4. **Direção de produto/técnica**: decisões e correções pedidas explicitamente por mim, entre elas:
+   - Adicionar **compra e venda** do dólar comercial (e rejeitar incluir "dólar turismo" como fonte, por não existir série pública do BCB para isso — a IA pesquisou e confirmou antes de implementar qualquer coisa).
+   - Pedir um redesign completo mobile-first com gráfico no estilo CoinMarketCap, com filtros de período (requisito do enunciado).
+   - **Reportar dois bugs reais em produção** ao rodar a stack: o `docker compose up` falhando (Docker Desktop parado) e uma **tela em branco** com erro no console do navegador (`RangeError` no `Intl.NumberFormat` ao formatar o CPI) — ambos causaram investigação de causa raiz e correção antes de seguir.
+   - Ajustar o gráfico depois de ver o resultado: remover o filtro 7D da Selic (pouco útil numa série que só muda em dia de decisão do Copom) e separar compra/venda em dois gráficos em vez de uma linha ambígua.
+   - Pedir explicitamente a revisão de tratamento de erros HTTP (status code correto por tipo de erro, em vez de 500 genérico) e limpeza de código antes da entrega.
+5. **Histórico de commits**: granular e revisado por mim antes do push — não um commit único gigante no fim.
+
+Cada decisão registrada em [Arquitetura e decisões técnicas](#arquitetura-e-decisões-técnicas) e nas seções de regra de variação/séries foi entendida e validada por mim, não apenas aceita — é o que eu apresentaria e defenderia numa conversa técnica sobre este projeto.
 
 ---
 
