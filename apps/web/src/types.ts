@@ -5,6 +5,7 @@
 export interface SeriesPoint {
   date: string;
   value: number;
+  secondaryValue?: number;
 }
 
 export interface IndicatorCard {
@@ -15,7 +16,10 @@ export interface IndicatorCard {
   frequency: 'DAILY' | 'MONTHLY';
   variationLabel: string;
   lastSyncedAt: string | null;
+  valueLabel: string;
   latestValue: number | null;
+  secondaryValueLabel: string | null;
+  latestSecondaryValue: number | null;
   referenceDate: string | null;
   variationPercent: number | null;
   variationUnavailableReason: 'insufficient-history' | 'zero-denominator' | null;

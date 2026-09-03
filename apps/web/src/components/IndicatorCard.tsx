@@ -10,7 +10,20 @@ interface Props {
 }
 
 export function IndicatorCard({ indicator, favorite, onToggleFavorite }: Props) {
-  const { code, name, source, latestValue, unit, referenceDate, variationPercent, variationLabel } = indicator;
+  const {
+    code,
+    name,
+    source,
+    latestValue,
+    valueLabel,
+    latestSecondaryValue,
+    secondaryValueLabel,
+    unit,
+    referenceDate,
+    variationPercent,
+    variationLabel,
+  } = indicator;
+  const hasSecondary = secondaryValueLabel !== null && latestSecondaryValue !== null;
 
   return (
     <article className="card" data-testid={`indicator-card-${code}`}>
@@ -29,7 +42,24 @@ export function IndicatorCard({ indicator, favorite, onToggleFavorite }: Props) 
 
       <Link to={`/indicadores/${code}`} className="card__body">
         <h3>{name}</h3>
-        <p className="card__value">{latestValue !== null ? formatValue(latestValue, unit) : 'Sem dados'}</p>
+
+        {hasSecondary ? (
+          <div className="card__dual-value">
+            <div>
+              <span className="card__dual-label">{secondaryValueLabel}</span>
+              <span className="card__dual-amount">{formatValue(latestSecondaryValue as number, unit)}</span>
+            </div>
+            <div>
+              <span className="card__dual-label">{valueLabel}</span>
+              <span className="card__dual-amount card__dual-amount--primary">
+                {latestValue !== null ? formatValue(latestValue, unit) : 'Sem dados'}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <p className="card__value">{latestValue !== null ? formatValue(latestValue, unit) : 'Sem dados'}</p>
+        )}
+
         <p className="card__date">
           {referenceDate ? `Ref.: ${formatDate(referenceDate)}` : 'Aguardando primeira sincronização'}
         </p>

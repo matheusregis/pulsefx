@@ -13,7 +13,10 @@ const baseIndicator: IndicatorCardData = {
   frequency: 'DAILY',
   variationLabel: 'D/D-1',
   lastSyncedAt: '2024-01-12T10:00:00.000Z',
+  valueLabel: 'Venda',
   latestValue: 5.2,
+  secondaryValueLabel: null,
+  latestSecondaryValue: null,
   referenceDate: '2024-01-12',
   variationPercent: 4,
   variationUnavailableReason: null,
@@ -59,5 +62,14 @@ describe('IndicatorCard', () => {
     const button = screen.getByRole('button', { name: /remover/i });
     expect(button).toHaveAttribute('aria-pressed', 'true');
     expect(button).toHaveTextContent('★');
+  });
+
+  it('shows both buy and sell values when the indicator has a secondary value (e.g. PTAX)', () => {
+    renderCard({ valueLabel: 'Venda', secondaryValueLabel: 'Compra', latestSecondaryValue: 5.18 });
+
+    expect(screen.getByText('Compra')).toBeInTheDocument();
+    expect(screen.getByText('Venda')).toBeInTheDocument();
+    expect(screen.getByText(/5,18 BRL por USD/)).toBeInTheDocument();
+    expect(screen.getByText(/5,20 BRL por USD/)).toBeInTheDocument();
   });
 });
