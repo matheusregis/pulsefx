@@ -1,8 +1,9 @@
 export function formatValue(value: number, unit: string): string {
-  const formatted = new Intl.NumberFormat('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: unit.includes('Índice') ? 1 : 4,
-  }).format(value);
+  // Índice (CPI) is quoted to 1 decimal; everything else to up to 4. min must
+  // never exceed max or Intl.NumberFormat throws RangeError at runtime.
+  const maximumFractionDigits = unit.includes('Índice') ? 1 : 4;
+  const minimumFractionDigits = Math.min(2, maximumFractionDigits);
+  const formatted = new Intl.NumberFormat('pt-BR', { minimumFractionDigits, maximumFractionDigits }).format(value);
   return `${formatted} ${unit}`;
 }
 

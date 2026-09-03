@@ -1,5 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { formatDate, formatVariation } from './format';
+import { formatDate, formatValue, formatVariation } from './format';
+
+describe('formatValue', () => {
+  it('formats an "Índice" unit (CPI) without throwing — regression: min/maxFractionDigits must not invert', () => {
+    // Bug: minimumFractionDigits was hardcoded to 2 while "Índice" capped
+    // maximumFractionDigits at 1, which makes Intl.NumberFormat throw
+    // RangeError at runtime (only surfaced once CPI had real data to render).
+    expect(() => formatValue(323.048, 'Índice (1982-84=100)')).not.toThrow();
+    expect(formatValue(323.048, 'Índice (1982-84=100)')).toBe('323,0 Índice (1982-84=100)');
+  });
+
+  it('formats a BRL/USD unit with up to 4 decimals', () => {
+    expect(formatValue(5.0962, 'BRL por USD')).toBe('5,0962 BRL por USD');
+  });
+});
 
 describe('formatVariation', () => {
   it('prefixes positive variation with a + sign and tone "up"', () => {
